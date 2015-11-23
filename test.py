@@ -7,25 +7,6 @@ import matplotlib.pyplot as plt
 
 
 
-
-
-############# Q1 (a) #############
-# p_range = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
-p_range = [0]
-
-for p in p_range:
-    net = create_izModularNetwork(p)
-
-
-    # Print out the matrix for fun
-    vertical = {}
-    for i in xrange(len(net.layer)):
-        vertical[i] = np.concatenate(net.layer[i].S.values(), axis=1)
-    network_matrix = np.concatenate(vertical.values(), axis=0)
-    plt.matshow(network_matrix, fignum=100, cmap=plt.cm.gray)
-    plt.show()
-
-
 ############# Q1(b) #############
 
 
@@ -38,7 +19,7 @@ net = create_izModularNetwork(0.1)
 for lr in xrange(len(net.layer)):
   net.layer[lr].v = -65 * np.ones(net.layer[lr].N)
   net.layer[lr].u = net.layer[lr].b * net.layer[lr].v
-  net.layer[lr].firings = [np.array([])]
+  net.layer[lr].firings = []
 
 
 ## SIMULATE
@@ -54,8 +35,8 @@ for t in xrange(T):
 
 
 ## Retrieve firings and add Dirac pulses for presentation
-firings = np.concatenate([net.layer[i].firings for i in xrange(net.layer)], axis=0)
-
+# firings = np.concatenate([net.layer[i].firings for i in xrange(len(net.layer))], axis=0)
+firings = np.array(net.layer[0].firings)
 
 ## Raster plots of firings
 if firings.size != 0:

@@ -27,6 +27,10 @@ def create_izModularNetwork(p=0):
     population = [N_ex] * n_ex_layer + [N_in]
     net = IzNetwork(population, Dmax)
 
+    # set initial current to zero
+    for i in xrange(len(population)):
+        net.layer[i].I = np.zeros(population[i])
+
     # make empty connectivity matrix between each layer
     for i in xrange(len(population)):
         for j in xrange(len(population)):

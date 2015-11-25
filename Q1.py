@@ -26,6 +26,7 @@ for p in p_range:
     vertical[i] = np.concatenate(net.layer[i].S.values(), axis=1)
   network_matrix = np.concatenate(vertical.values(), axis=0)
   plt.matshow(network_matrix, fignum=100, cmap=plt.cm.gray)
+  plt.title('Connection matrix (p=%.1f)' %p)
   # plt.show()
   plt.savefig('q1a_%.1f.svg' % p)
   plt.clf()
@@ -46,7 +47,7 @@ for p in p_range:
     for i in xrange(len(net.layer)-1):
       net.layer[i].I = Ib * rand.poisson(0.01, net.layer[i].N)
 
-    net.layer[8].I = np.zeros(200)
+    net.layer[n_ex_layer].I = np.zeros(N_in)  # inhibitory layer
     net.Update(t)
 
   # Retrieve firings data

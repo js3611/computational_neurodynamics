@@ -19,6 +19,7 @@ T  = 1000 * 60  # Simulation time
 Ib = 15.0    # extra current to be injected
 nRuns = 20
 
+data = np.array([]).reshape(0,2)
 for i in range(nRuns):
   p = rand.random()
   net = create_izModularNetwork(p)
@@ -75,3 +76,15 @@ for i in range(nRuns):
   result = miCalc.computeAverageLocalOfObservations()*np.log2(np.e)
 
   print p, result
+  # Append result 
+  data = np.vstack((data, [p, result]))
+
+# Plot Result
+plt.scatter(data[:,0], data[:,1],marker='.')
+plt.xlim((0,1))
+plt.ylim((0,5))
+plt.title("Integration I(S)")
+plt.xlabel("Rewiring probability p")
+plt.ylabel("Integration (bits)")
+plt.plot()
+

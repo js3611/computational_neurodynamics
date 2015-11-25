@@ -69,16 +69,15 @@ class IzNetwork:
 
         # Sum current from incoming spikes
         k = len(firings)
-        while k > 0 and (firings[k-1][0] > (t - self.Dmax)):
-          idx = delay[:, firings[k-1][1] == (t-firings[k-1][0])
-          t = firings[k-1][1]
-          self.layer[i].I[idx] += F * S[idx, t]
-          k = k-1
-
-        # while k > 0 and (firings[k-1, 0] > (t - self.Dmax)):
-        #   idx = delay[:, firings[k-1, 1]] == (t-firings[k-1, 0])
-        #   self.layer[i].I[idx] += F * S[idx, firings[k-1, 1]]
+        # while k > 0 and (firings[k-1][0] > (t - self.Dmax)):
+        #   idx = delay[:, firings[k-1][1]] == (t-firings[k-1][0])
+        #   self.layer[i].I[idx] += F * S[idx, firings[k-1][1]]
         #   k = k-1
+
+        while k > 0 and (firings[k-1, 0] > (t - self.Dmax)):
+          idx = delay[:, firings[k-1, 1]] == (t-firings[k-1, 0])
+          self.layer[i].I[idx] += F * S[idx, firings[k-1, 1]]
+          k = k-1
 
     # Update v and u using the Izhikevich model and Euler method
     for k in xrange(int(1/dt)):
@@ -94,11 +93,11 @@ class IzNetwork:
       if len(fired) > 0:
         for f in fired:
           # Add spikes into spike train
-          self.layer[i].firings += [[t,f]]
-          # if len(self.layer[i].firings) != 0:
-          #   self.layer[i].firings = np.vstack([self.layer[i].firings, [t, f]])
-          # else:
-          #   self.layer[i].firings = np.array([[t, f]])
+          # self.layer[i].firings += [[t,f]]
+          if len(self.layer[i].firings) != 0:
+            self.layer[i].firings = np.vstack([self.layer[i].firings, [t, f]])
+          else:
+            self.layer[i].firings = np.array([[t, f]])
 
           # Reset the membrane potential after spikes
           self.layer[i].v[f]  = self.layer[i].c[f]

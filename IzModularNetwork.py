@@ -9,23 +9,26 @@ import matplotlib.pyplot as plt
 # create a modular network using IzNetwork with
 # 8 modules of 100 exhibitory neurons and 1 module of 200 inhibitory neurons
 
-def create_izModularNetwork(p=0):
+def create_izModularNetwork(p=0, n_ex_layer=8, N_ex=100, N_in=200):
     # p = rewiring probability between exhibitory to exhibitory connections
+    # n_ex_layer = number of exhibitory layers
+    # N_ex = number of neurons in each exhibitory layer
+    # N_in = number of neurons in the inhibitory layer
 
-    F_e2e = 17
-    F_e2i = 50
-    F_i2e = 2
-    F_i2i = 1
+    # Scaling factors
+    F_e2e = 17.0
+    F_e2i = 50.0
+    F_i2e = 2.0
+    F_i2i = 1.0
+
+    # Delay
     D = 1
     Dmax = 20
-    n_ex_layer = 8
 
-    N_ex = 100
-    N_in = 200
-    idx_in = 8
+    idx_in = n_ex_layer  # index of the inhibitory layer
+    population = [N_ex] * n_ex_layer + [N_in]  # list of neuron numbers for each layer
 
-    population = [N_ex] * n_ex_layer + [N_in]
-    net = IzNetwork(population, Dmax)
+    net = IzNetwork(population, Dmax)  # create network of Izhikevich neurons
 
     # set initial current to zero
     for i in xrange(len(population)):
@@ -37,8 +40,8 @@ def create_izModularNetwork(p=0):
             net.layer[i].S[j] = np.zeros([population[i], population[j]])
             if i != idx_in and j != idx_in:
                 net.layer[i].factor[j] = F_e2e
-                d = 20 * rand.random(N_ex*N_ex).reshape((N_ex, N_ex))
-                net.layer[i].delay[j] = d
+                d = np.ceil(20 * rand.random([N_ex, N_ex]))
+                net.layer[i].delay[j] = d.astype(int)
 
 
     # exhibitory module
@@ -68,14 +71,14 @@ def create_izModularNetwork(p=0):
 
     r = rand.random(N_in)
     net.layer[idx_in].N = N_in
-    net.layer[idx_in].a = 0.02 * np.ones(N_in)
-    net.layer[idx_in].b = 0.25 * np.ones(N_in)
-    net.layer[idx_in].c = -65 + 15*(r**2)
-    net.layer[idx_in].d = 2 - 6*(r**2)
+    net.layer[idx_in].a = 0.02 + 0.08*r
+    net.layer[idx_in].b = 0.25 - 0.05*r
+    net.layer[idx_in].c = -65*np.ones(N_in)
+    net.layer[idx_in].d = 2*np.ones(N_in)
 
     # 1. connection from inhibitory to exhibitory with random weight
     for i in xrange(n_ex_layer):
-        net.layer[i].S[idx_in] = -1 * rand.random(N_ex * N_in).reshape((N_ex, N_in))
+        net.layer[i].S[idx_in] = -1 * rand.random([N_ex, N_in])
         net.layer[i].delay[idx_in] = D * np.ones([N_ex, N_in])
         net.layer[i].factor[idx_in] = F_i2e
 
@@ -83,18 +86,17 @@ def create_izModularNetwork(p=0):
     # each inhibitory neuron has focal connection from 4 exhibitory neuron from the same module
     for i in xrange(N_in):
         # pick a random module
-        m = rand.random_integers(0, n_ex_layer)
+        m = rand.random_integers(0, n_ex_layer-1)
         # pick 4 random neurons
         rand_neurons = rand.random_integers(0, N_ex-1, 4)
-        S = net.layer[idx_in].S[m]
-        S[i][rand_neurons] = rand.random(4)
+        net.layer[idx_in].S[m][i][rand_neurons] = rand.random(4)
 
     for i in xrange(n_ex_layer):
         net.layer[idx_in].factor[i] = F_e2i
         net.layer[idx_in].delay[i] = D * np.ones([N_in, N_ex])
 
     # 3. connections from inhibitory to inhibitory
-    net.layer[idx_in].S[idx_in] = -1 * rand.random(N_in * N_in).reshape((N_in, N_in))
+    net.layer[idx_in].S[idx_in] = -1 * rand.random([N_in, N_in])
     net.layer[idx_in].factor[idx_in] = F_i2i
     net.layer[idx_in].delay[idx_in] = D * np.ones([N_in, N_in])
 
@@ -102,27 +104,24 @@ def create_izModularNetwork(p=0):
 
     # (Rewiring) connect each module again randomly
     # for each node, with some probability, rewire!
-
     for l in xrange(n_ex_layer):
         for node in xrange(N_ex):
-            if rand.random() < p:
-                # pick random edge
-                S = net.layer[l].S[l]
-                edge_indices = [i for i in xrange(N_ex) if S[i, node]]
-                if len(edge_indices) > 0:
-                    random_index = rand.random_integers(0, len(edge_indices)-1)
-                    target_index = edge_indices[random_index]
+            S = net.layer[l].S[l]
+            edge_indices = [i for i in xrange(N_ex) if S[i, node]]
+            for edge_idx in edge_indices:
+                if rand.random() < p:
                     # remove the edge
-                    S[target_index, node] = 0
+                    net.layer[l].S[l][edge_idx, node] = 0
                     # pick a new node in a new module
-                    rand_module = rand.random_integers(0, n_ex_layer-1)
+                    rand_module = rand.random_integers(0, n_ex_layer-2)
                     if rand_module >= l:
-                        rand_module = (rand_module + 1) % n_ex_layer
+                        rand_module = (rand_module + 1)
 
                     # rewire
                     rand_target = rand.random_integers(0, N_ex-1)
-                    target_S = net.layer[rand_module].S[l]
-                    target_S[rand_target, node] = 1
+                    while net.layer[rand_module].S[l][rand_target, node]==1:
+                        rand_target = rand.random_integers(0, N_ex-1)
+                    net.layer[rand_module].S[l][rand_target, node] = 1
 
     return net
 
